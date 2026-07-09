@@ -1,0 +1,6 @@
+{
+  "name": "IELTS Exam Readiness Check",
+  "description": "A 3-minute interactive quiz that evaluates your readiness for the IELTS exam and generates a personalized study plan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
