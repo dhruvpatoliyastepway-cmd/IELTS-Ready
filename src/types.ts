@@ -7,24 +7,12 @@ export interface ExamDetails {
 
 export interface MCQQuestion {
   id: string;
-  type: "grammar" | "vocabulary";
+  type: "grammar" | "vocabulary" | "cohesion" | "task_response";
+  category: string; // e.g. "Grammatical Range & Accuracy (GRA)"
   question: string;
   options: string[];
   correctIndex: number;
   explanation: string;
-}
-
-export interface WritingTopic {
-  id: string;
-  prompt: string;
-  category: string;
-}
-
-export interface WritingEvaluation {
-  estimated_band: number;
-  strength: string;
-  weakness: string;
-  feedback: string;
 }
 
 export interface StudyPlanDay {
@@ -47,12 +35,9 @@ export interface LeadInfo {
 }
 
 export interface QuizSessionState {
-  step: "hook" | "exam_details" | "snapshot" | "processing" | "verdict" | "lead_capture" | "report";
+  step: "hook" | "exam_details" | "snapshot" | "processing" | "verdict";
   examDetails: ExamDetails | null;
   mcqAnswers: { [key: string]: number }; // questionId -> selectedIndex
-  writingTopic: WritingTopic | null;
-  writingResponse: string;
-  evaluationResult: WritingEvaluation | null;
   leadInfo: LeadInfo | null;
   studyPlan: StudyPlan | null;
 }

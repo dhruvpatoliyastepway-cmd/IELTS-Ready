@@ -7,10 +7,10 @@ interface ProcessingScreenProps {
 }
 
 const STEPS = [
-  { icon: Database, text: "Comparing your responses to 50,000+ premium IELTS scripts..." },
-  { icon: Sparkles, text: "Running NLP grammar and lexical range evaluation..." },
-  { icon: Loader2, text: "Calculating overall performance score and current band level..." },
-  { icon: ShieldCheck, text: "Compiling diagnostic verdict and custom recommended timeline..." }
+  { icon: Database, text: "Analyzing choice patterns against target Band criteria..." },
+  { icon: Sparkles, text: "Checking grammatical range and parallel structure accuracy..." },
+  { icon: Loader2, text: "Verifying contrastive linking markers and lexical registers..." },
+  { icon: ShieldCheck, text: "Generating diagnostic verdict and custom 3-day study plan..." }
 ];
 
 export default function ProcessingScreen({ onComplete }: ProcessingScreenProps) {

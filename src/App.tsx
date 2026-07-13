@@ -1,26 +1,17 @@
 import { useState } from "react";
-import { ExamDetails, WritingTopic, WritingEvaluation, StudyPlan } from "./types";
+import { ExamDetails } from "./types";
 import HookScreen from "./components/HookScreen";
 import ExamDetailsScreen from "./components/ExamDetailsScreen";
 import SnapshotScreen from "./components/SnapshotScreen";
 import ProcessingScreen from "./components/ProcessingScreen";
 import VerdictScreen from "./components/VerdictScreen";
-import Header from "./components/Header";
-import { Award, ShieldCheck, Database, Zap, BookOpen } from "lucide-react";
+import { Award } from "lucide-react";
 
 export default function App() {
   const [step, setStep] = useState<"hook" | "exam_details" | "snapshot" | "processing" | "verdict">("hook");
   const [examDetails, setExamDetails] = useState<ExamDetails | null>(null);
   const [mcqAnswers, setMcqAnswers] = useState<{ [key: string]: number }>({});
-  const [selectedTopic, setSelectedTopic] = useState<WritingTopic | null>(null);
-  const [writingResponse, setWritingResponse] = useState("");
-  const [voiceTranscript, setVoiceTranscript] = useState<string | undefined>(undefined);
   
-  // Assessment outputs
-  const [evaluationResult, setEvaluationResult] = useState<WritingEvaluation | null>(null);
-  const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
-  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
-
   // STEP NAVIGATION
   const handleStart = () => {
     setStep("exam_details");
@@ -31,157 +22,34 @@ export default function App() {
     setStep("snapshot");
   };
 
-  const handleSnapshotSubmit = async (
-    answers: { [key: string]: number },
-    topic: WritingTopic,
-    writingText: string,
-    transcript?: string
-  ) => {
+  const handleSnapshotSubmit = (answers: { [key: string]: number }) => {
     setMcqAnswers(answers);
-    setSelectedTopic(topic);
-    setWritingResponse(writingText);
-    setVoiceTranscript(transcript);
     setStep("processing");
-
-    // Initiate AI Evaluation in the background
-    try {
-      const response = await fetch("/api/evaluate-writing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ writingText, topic: topic.prompt }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setEvaluationResult(data);
-      } else {
-        throw new Error("Writing evaluation failed.");
-      }
-    } catch (err) {
-      console.error(err);
-      // Fallback evaluation for premium fail-safe user experience
-      setEvaluationResult({
-        estimated_band: 6.5,
-        strength: "Clear topical argument structure.",
-        weakness: "Repetitive conjunction use.",
-        feedback: "Your paragraph introduces the topic well. To reach band 7.0+, try substituting simpler verbs with more academic alternatives and vary your sentence structures."
-      });
-    }
   };
 
   const handleProcessingComplete = () => {
     setStep("verdict");
   };
 
-  const handleLeadCapturedSubmit = async (name: string, email: string, phone: string) => {
-    setIsGeneratingPlan(true);
-
-    // Calculate details for study plan
-    const targetBand = examDetails?.targetBand || 7.0;
-    
-    const g1Correct = mcqAnswers.g1 === 1 ? 1 : 0;
-    const v1Correct = mcqAnswers.v1 === 2 ? 1 : 0;
-    const mcqCorrectCount = g1Correct + v1Correct;
-    
-    let mcqBand = 5.5;
-    if (mcqCorrectCount === 1) mcqBand = 6.0;
-    if (mcqCorrectCount === 2) mcqBand = 6.5;
-
-    const writingBand = evaluationResult?.estimated_band || 6.0;
-    const hasVoice = !!voiceTranscript;
-    const speakingBand = hasVoice ? (voiceTranscript!.length > 100 ? 7.0 : 6.5) : 0;
-
-    let estimatedCurrentBand = 6.0;
-    if (hasVoice) {
-      estimatedCurrentBand = (mcqBand * 0.2) + (writingBand * 0.5) + (speakingBand * 0.3);
-    } else {
-      estimatedCurrentBand = (mcqBand * 0.2) + (writingBand * 0.8);
-    }
-    estimatedCurrentBand = Math.round(estimatedCurrentBand * 2) / 2;
-    estimatedCurrentBand = Math.max(5.0, Math.min(9.0, estimatedCurrentBand));
-
-    const gap = Math.max(0, targetBand - estimatedCurrentBand);
-    
-    const hasBooked = examDetails?.examDate !== "not_booked";
-    let daysRemaining = 999;
-    if (hasBooked && examDetails?.examDate) {
-      const examDateObj = new Date(examDetails.examDate);
-      const currentDateObj = new Date();
-      const diffTime = examDateObj.getTime() - currentDateObj.getTime();
-      daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    }
-
-    try {
-      const response = await fetch("/api/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          targetBand,
-          currentBand: estimatedCurrentBand,
-          gap,
-          daysRemaining: hasBooked ? daysRemaining : 30,
-          strength: evaluationResult?.strength || "Good cohesion",
-          weakness: evaluationResult?.weakness || "Limited vocabulary range",
-        }),
-      });
-
-      if (response.ok) {
-        const plan = await response.json();
-        setStudyPlan(plan);
-      } else {
-        throw new Error("Failed to generate plan.");
-      }
-    } catch (err) {
-      console.error(err);
-      // Fallback study plan
-      setStudyPlan({
-        title: "High-Impact IELTS Close-the-Gap Curriculum",
-        day1: {
-          title: "Day 1: Lexical Resource Upgrades",
-          tasks: [
-            "Learn 5 high-tier Academic word pairings targeting your weakness.",
-            "Incorporate inverted conditional structures in 3 sample paragraphs.",
-            "Record a 15-second response and focus purely on fluent phrasing."
-          ]
-        },
-        day2: {
-          title: "Day 2: Structural Speed Drills",
-          tasks: [
-            "Draft a full Task 2 introduction under a 3-minute stopwatch.",
-            "Improve cohesion transition signals (e.g. using on the contrary, subsequently).",
-            "Evaluate 2 high-scoring sample scripts from the database."
-          ]
-        },
-        day3: {
-          title: "Day 3: Target Timed Strategy",
-          tasks: [
-            "Simulate an official Part 1 speaking session under timed review.",
-            "Check for spelling errors and minor grammatical slips in your drafts.",
-            "Formulate 3 complex compound sentences using contrasting conjunctions."
-          ]
-        },
-        finalAdvice: "Close monitoring of your paragraph structure will guarantee a band 7.5+ outcome!"
-      });
-    } finally {
-      setIsGeneratingPlan(false);
-    }
+  const handleRestart = () => {
+    setMcqAnswers({});
+    setExamDetails(null);
+    setStep("hook");
   };
 
   // Helper to determine step tracking labels for Geometric header
   const getStepIndicator = () => {
     switch (step) {
       case "hook":
-        return "Step 01 / 06 — Hook";
+        return "Step 01 / 05 — Introduction";
       case "exam_details":
-        return "Step 02 / 06 — Exam Details";
+        return "Step 02 / 05 — Exam Target";
       case "snapshot":
-        return "Step 03 / 06 — Snapshot";
+        return "Step 03 / 05 — Diagnostic Test";
       case "processing":
-        return "Step 04 / 06 — Analyzing";
+        return "Step 04 / 05 — Analysis";
       case "verdict":
-        return studyPlan 
-          ? "Step 06 / 06 — Unlocked Report" 
-          : "Step 05 / 06 — Verdict";
+        return "Step 05 / 05 — Verdict Report";
     }
   };
 
@@ -222,7 +90,7 @@ export default function App() {
             {step === "exam_details" && (
               <ExamDetailsScreen 
                 onNext={handleExamDetailsSubmit} 
-                onBack={() => setStep("hook")} 
+                onBack={handleRestart} 
               />
             )}
             {step === "snapshot" && (
@@ -238,11 +106,7 @@ export default function App() {
               <VerdictScreen 
                 examDetails={examDetails}
                 mcqAnswers={mcqAnswers}
-                writingEvaluation={evaluationResult}
-                voiceTranscript={voiceTranscript}
-                onLeadCaptured={handleLeadCapturedSubmit}
-                studyPlan={studyPlan}
-                isGeneratingPlan={isGeneratingPlan}
+                onRestart={handleRestart}
               />
             )}
           </div>
